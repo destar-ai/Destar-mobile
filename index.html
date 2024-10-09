@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Rating with Feedback and Thank You Popup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        /* Centering the main popup content */
+        .popup-container, .feedback-popup, .thankyou-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            width: 400px;
+        }
+
+        /* Overlay for dimming the background */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* Stars styling */
+        .stars {
+            display: inline-block;
+            direction: rtl;
+        }
+
+        .stars input {
+            display: none;
+        }
+
+        .stars label {
+            font-size: 50px;
+            color: lightgray;
+            cursor: pointer;
+        }
+
+        .stars input:checked ~ label {
+            color: gold;
+        }
+
+        .stars label:hover,
+        .stars label:hover ~ label {
+            color: gold;
+        }
+
+        /* Styling for the submit button */
+        #submit-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        #submit-btn:hover {
+            background-color: #218838;
+        }
+
+        /* Close button for popups */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            font-size: 20px;
+        }
+
+        /* Back button to go to Rate Us page */
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            font-size: 20px;
+        }
+
+        .popup-content h1 {
+            color: #007bff;
+        }
+
+        .popup-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .popup-content button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .popup-content button:hover {
+            background-color: #218838;
+        }
+        @media (max-width: 600px) {
+    .popup-container, .feedback-popup, .thankyou-popup {
+        width: 90%; /* Make it fit most mobile screens */
+        padding: 20px;
+    }
+
+    .stars label {
+        font-size: 40px; /* Smaller stars for mobile screens */
+    }
+
+    #submit-btn {
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+    <!-- Overlay to darken background -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Main rating popup -->
+    <div class="popup-container" id="popup-container">
+        <button class="close-btn" onclick="closePopup()">✖</button>
+        <h1>Rate Us</h1>
+
+        <div class="stars">
+            <input type="radio" id="star-5" name="rating" value="5" />
+            <label for="star-5">★</label>
+            <input type="radio" id="star-4" name="rating" value="4" />
+            <label for="star-4">★</label>
+            <input type="radio" id="star-3" name="rating" value="3" />
+            <label for="star-3">★</label>
+            <input type="radio" id="star-2" name="rating" value="2" />
+            <label for="star-2">★</label>
+            <input type="radio" id="star-1" name="rating" value="1" />
+            <label for="star-1">★</label>
+        </div>
+
+        <div id="rating-value">Your rating: <span id="rating-display">0</span></div>
+
+        <!-- Centered Submit Rating Button -->
+        <button id="submit-btn" style="margin: 20px auto; display: block;" onclick="submitRating()">Submit Rating</button>
+    </div>
+
+    <!-- Feedback popup -->
+    <div class="feedback-popup" id="feedback-popup">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <button class="close-btn" onclick="closeFeedbackPopup()">✖</button>
+        <div class="popup-content">
+            <h1>We'd Love Your Feedback</h1>
+            <p>Please let us know how we can improve:</p>
+            <textarea rows="5" placeholder="Write your feedback here..."></textarea><br>
+            <button onclick="closeFeedbackPopup()">Submit Feedback</button>
+        </div>
+    </div>
+
+    <!-- Thank you popup -->
+    <div class="thankyou-popup" id="thankyou-popup">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <button class="close-btn" onclick="closeThankyouPopup()">✖</button>
+        <div class="popup-content">
+            <h1>Thank You!</h1>
+            <p>We appreciate your feedback. Have a great day!</p>
+            <button onclick="closeThankyouPopup()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const stars = document.querySelectorAll('.stars input');
+        const ratingDisplay = document.getElementById('rating-display');
+        const submitBtn = document.getElementById('submit-btn');
+        const popupContainer = document.getElementById('popup-container');
+        const overlay = document.getElementById('overlay');
+        const feedbackPopup = document.getElementById('feedback-popup');
+        const thankyouPopup = document.getElementById('thankyou-popup');
+        let selectedRating = 0;
+
+        stars.forEach(star => {
+            star.addEventListener('change', function () {
+                selectedRating = this.value;
+                ratingDisplay.textContent = selectedRating;
+                submitBtn.style.display = 'block'; // Show submit button when a rating is selected
+            });
+        });
+
+        function submitRating() {
+            // Hide the Rate Us popup when feedback or thank you popup is shown
+            popupContainer.style.display = 'none';
+            
+            if (selectedRating <= 3) {
+                openFeedbackPopup();
+            } else {
+                openThankyouPopup();
+            }
+            console.log(`Customer rating: ${selectedRating}`);
+        }
+
+        function openPopup() {
+            overlay.style.display = 'block';
+            popupContainer.style.display = 'block';
+        }
+
+        function closePopup() {
+            popupContainer.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        function openFeedbackPopup() {
+            feedbackPopup.style.display = 'block';
+        }
+
+        function closeFeedbackPopup() {
+            feedbackPopup.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        function openThankyouPopup() {
+            thankyouPopup.style.display = 'block';
+        }
+
+        function closeThankyouPopup() {
+            thankyouPopup.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        // Function to go back to the Rate Us page
+        function goBack() {
+            feedbackPopup.style.display = 'none';
+            thankyouPopup.style.display = 'none';
+            popupContainer.style.display = 'block';
+        }
+
+        // Automatically open the main rating popup after 3 seconds
+        window.onload = function () {
+            setTimeout(openPopup, 3000);
+        };
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+          });
+        }
+      </script>
+      
+
+</body>
+</html>
